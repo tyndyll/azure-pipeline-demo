@@ -8,8 +8,8 @@ steps:
   - script: |
       echo "Requesting token..."
       response=$(curl -sSL -X POST \
-        --url "https://oauth.upwind.dev/oauth/token" \
-        --data "audience=https://agent.upwind.dev" \
+        --url "https://oauth.eu.upwind.io/oauth/token" \
+        --data "audience=https://agent.eu.upwind.io" \
         --data "client_id=$(UPWIND_CLIENT_ID)" \
         --data "client_secret=$(UPWIND_CLIENT_SECRET)" \
         --data "grant_type=client_credentials")
@@ -55,7 +55,7 @@ steps:
       ./shiftleft image \
           --source=CUSTOM_CI \
           --initiator=tyndyll \
-          --upwind-uri=upwind.dev \
+          --upwind-uri=eu.upwind.io \
           --upwind-client-id=$(UPWIND_CLIENT_ID) \
           --upwind-client-secret=$(UPWIND_CLIENT_SECRET) \
           --docker-image=$DOCKER_IMAGE \
