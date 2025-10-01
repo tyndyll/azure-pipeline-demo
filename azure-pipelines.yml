@@ -58,5 +58,6 @@ steps:
           --upwind-uri=upwind.dev \
           --upwind-client-id=$(UPWIND_CLIENT_ID) \
           --upwind-client-secret=$(UPWIND_CLIENT_SECRET) \
+          --docker-image=$DOCKER_IMAGE \
           --docker-pull=false          
     displayName: "Acquire token, download file, pull image, scan image"
