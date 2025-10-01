@@ -1,0 +1,62 @@
+trigger:
+- main   # or your branch
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+  - script: |
+      echo "Requesting token..."
+      response=$(curl -sSL -X POST \
+        --url "https://oauth.upwind.dev/oauth/token" \
+        --data "audience=https://agent.upwind.dev" \
+        --data "client_id=$(UPWIND_CLIENT_ID)" \
+        --data "client_secret=$(UPWIND_CLIENT_SECRET)" \
+        --data "grant_type=client_credentials")
+
+      if ! TOKEN=$(echo "$response" | jq -r '.access_token // empty' 2>/dev/null); then
+        echo "Failed to parse JSON response: $response" >&2
+        exit 1
+      elif [ -z "$TOKEN" ]; then
+        echo "No access_token found in response: $response" >&2
+        exit 1
+      fi
+
+      OS=$(uname | tr '[:upper:]' '[:lower:]')
+      ARCH=$(uname -m | tr '[:upper:]' '[:lower:]')
+
+      case "$ARCH" in
+        x86_64)
+          ARCH="amd64"
+          ;;
+        aarch64|arm64)
+          ARCH="arm64"
+          ;;
+        *)
+          echo "Unsupported architecture: $ARCH" >&2
+          exit 1
+          ;;
+      esac
+
+      UPWIND_AGENT="shiftleft"
+      AGENT_OUTPUT="./$UPWIND_AGENT"
+      UPWIND_AGENT_URL="https://releases.upwind.dev/$UPWIND_AGENT/stable/$OS/$ARCH/$UPWIND_AGENT-$OS-$ARCH"
+
+      echo "Downloading from $UPWIND_AGENT_URL"
+      curl -fsS -H "Authorization: Bearer $TOKEN" -L "$UPWIND_AGENT_URL" -o "$AGENT_OUTPUT"
+      chmod +x "$AGENT_OUTPUT"
+
+      DOCKER_IMAGE=langchain/langchain:latest
+
+      echo "Docker pull..."
+      docker pull $DOCKER_IMAGE
+
+      echo "Running Upwind Scan"
+      ./shiftleft image \
+          --source=CUSTOM_CI \
+          --initiator=tyndyll \
+          --upwind-uri=upwind.dev \
+          --upwind-client-id=$(UPWIND_CLIENT_ID) \
+          --upwind-client-secret=$(UPWIND_CLIENT_SECRET) \
+          --docker-pull=false          
+    displayName: "Acquire token, download file, pull image, scan image"
